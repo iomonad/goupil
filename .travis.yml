@@ -1,0 +1,19 @@
+language: elixir
+os:
+  - linux
+elixir:
+  - 1.6
+otp_release:
+  - '18.2.1'
+env:
+  - MIX_ENV=test
+script: mix coveralls.travis
+notifications:
+  irc:
+    channels:
+      - "irc.freenode.net##42born2code"
+    template:
+      - "Hey trosa! %{repository_slug} (%{commit}) : %{message} %{foo} "
+      - "Build details: %{build_url}"
+    on_success: never
+    on_failure: always
