@@ -4,11 +4,16 @@ defmodule Snat.MixProject do
   def project do
     [
       app: :snat,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
-	  test_coverage: [tool: ExCoveralls],
-	  preferred_cli_env: ["coveralls": :test, "coveralls.detail": :test, "coveralls.post": :test, "coveralls.html": :test],
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
       deps: deps()
     ]
   end
@@ -21,7 +26,8 @@ defmodule Snat.MixProject do
 
   defp deps do
     [
-	  {:excoveralls, "~> 0.8", only: :test}
+      {:excoveralls, "~> 0.8", only: :test},
+	  {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false}
     ]
   end
 end
