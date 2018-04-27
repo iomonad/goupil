@@ -27,7 +27,8 @@ defmodule Snat.MixProject do
   defp deps do
     [
       {:excoveralls, "~> 0.8", only: :test},
-	  {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false}
+      {:credo, "~> 0.9.1", only: [:dev, :test], runtime: false},
+      {:slack, "~> 0.13.0"}
     ]
   end
 end
