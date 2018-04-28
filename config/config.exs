@@ -29,6 +29,11 @@ use Mix.Config
 #
 #     import_config "#{Mix.env}.exs"
 
+# set tokens
+config :snat,
+  slack_token: System.get_env("SLACK_TOKEN")
+
+# customize logger
 config :logger,
   backends: [:console],
   compile_time_purge_level: :info
