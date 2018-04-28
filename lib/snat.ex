@@ -1,18 +1,12 @@
 defmodule Snat do
-  @moduledoc """
-  Documentation for Snat.
-  """
 
-  @doc """
-  Hello world.
+  @spec main :: none
+  def main do
+	IO.puts "Hello World"
+  end
 
-  ## Examples
-
-      iex> Snat.hello
-      :world
-
-  """
+  @spec hello :: none
   def hello do
-    :world
+	:world
   end
 end
