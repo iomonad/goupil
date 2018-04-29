@@ -1,18 +1,13 @@
-language: elixir
+language: scala
 os:
   - linux
-elixir:
-  - 1.6
-otp_release:
-  - '18.2.1'
-env:
-  - MIX_ENV=test
-script: mix coveralls.travis
+script: "sbt clean coverage test"
+after_success: "sbt coverageReport coveralls"
 notifications:
   irc:
     channels:
       - "irc.freenode.net##42born2code"
-    template:
+      template:
       - "Hey trosa! %{repository_slug} (%{commit}) : %{message} %{foo} "
       - "Build details: %{build_url}"
     on_success: never
