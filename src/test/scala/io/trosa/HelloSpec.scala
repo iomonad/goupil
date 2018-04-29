@@ -2,8 +2,8 @@ package example
 
 import org.scalatest._
 
-class HelloSpec extends FlatSpec with Matchers {
-  "The Hello object" should "say hello" in {
-    Hello.greeting shouldEqual "hello"
+class MainSpec extends FlatSpec with Matchers {
+  "I" should "no forget my maths" in {
+    1 + 1 shouldEqual 2
   }
 }
