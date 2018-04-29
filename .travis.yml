@@ -1,8 +1,10 @@
 language: scala
 os:
   - linux
-script: "sbt clean coverage test"
-after_success: "sbt coverageReport coveralls"
+script:
+  - "sbt clean coverage test"
+after_success:
+  - "sbt coverageReport coveralls"
 notifications:
   irc:
     channels:

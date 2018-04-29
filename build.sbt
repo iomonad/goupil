@@ -1,5 +1,9 @@
 import Dependencies._
 
+/*
+ * Core project configuration
+ */
+
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
@@ -10,3 +14,18 @@ lazy val root = (project in file(".")).
     name := "snat",
     libraryDependencies += scalaTest % Test
   )
+
+/*
+ * Dependencies
+ */
+
+resolvers += "jitpack" at "https://jitpack.io"
+
+libraryDependencies += "org.typelevel" %% "cats-core" % "1.0.1"
+
+libraryDependencies ++= Seq(
+  "com.typesafe.akka" %% "akka-actor" % "2.5.12",
+  "com.typesafe.akka" %% "akka-testkit" % "2.5.12" % Test
+)
+
+libraryDependencies += "com.github.Ullink" % "simple-slack-api" % "1.2.0"
