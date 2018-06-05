@@ -1,6 +1,36 @@
-# Snat [![Build Status](https://travis-ci.org/iomonad/snat.svg?branch=master)](https://travis-ci.org/iomonad/snat) [![Coverage Status](https://coveralls.io/repos/github/iomonad/snat/badge.svg?branch=master)](https://coveralls.io/github/iomonad/snat?branch=master)
+# snat
 
-**Slack Workspace <--> IRC bridge.**
+FIXME: description
 
 ## Installation
-// todo
+
+Download from http://example.com/FIXME.
+
+## Usage
+
+FIXME: explanation
+
+    $ java -jar snat-0.1.0-standalone.jar [args]
+
+## Options
+
+FIXME: listing of options this app accepts.
+
+## Examples
+
+...
+
+### Bugs
+
+...
+
+### Any Other Sections
+### That You Think
+### Might be Useful
+
+## License
+
+Copyright © 2018 FIXME
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
