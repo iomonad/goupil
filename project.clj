@@ -7,7 +7,8 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/core.async "0.4.474"]
                  [org.clojure/tools.logging "0.4.1"]
-                 [com.ullink.slack/simpleslackapi "1.2.0"]]
+                 [com.ullink.slack/simpleslackapi "1.2.0"]
+                 [com.fzakaria/slf4j-timbre "0.3.8"]]
   :main ^:skip-aot ducula.kernel
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
