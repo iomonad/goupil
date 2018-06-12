@@ -25,6 +25,7 @@ package io.trosa.goupil.actors
 import akka.actor.{Actor, ActorLogging}
 import com.ullink.slack.simpleslackapi.SlackSession
 import com.ullink.slack.simpleslackapi.events._
+import com.ullink.slack.simpleslackapi.events.userchange.SlackUserChange
 import com.ullink.slack.simpleslackapi.listeners._
 
 class Listeners extends Actor with ActorLogging {
@@ -44,9 +45,44 @@ class Listeners extends Actor with ActorLogging {
                     event.getMessageContent)
         })
 
+        /*
+        *  Join listener
+        * */
         slackSession addChannelJoinedListener(
             (event: SlackChannelJoined, session: SlackSession) => {
                 log.info("Joined {}", event.getSlackChannel.getName)
+        })
+
+        /*
+        * Message update listener
+        * */
+        slackSession addMessageUpdatedListener(
+            (event: SlackMessageUpdated, session: SlackSession) => {
+                log.info("Message: {} updated to {}", event.getMessageTimestamp, event.getNewMessage)
+        })
+
+        /*
+        * Left listener
+        * */
+        slackSession addChannelLeftListener(
+            (event: SlackChannelLeft, session: SlackSession) => {
+            log.debug("{}", event.toString)
+        })
+
+        /*
+        * User metadata changes
+        * */
+        slackSession addSlackUserChangeListener(
+            (event: SlackUserChange, session: SlackSession) => {
+                log.debug("User Change: {}", event.getUser)
+            })
+
+        /*
+        * Reaction addition listener
+        * */
+        slackSession addReactionAddedListener(
+            (event: ReactionAdded, session: SlackSession) => {
+
         })
     }
 }
