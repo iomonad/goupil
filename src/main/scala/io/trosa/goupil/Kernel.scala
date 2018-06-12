@@ -1,5 +1,10 @@
 package io.trosa.goupil
 
+import akka.actor.{ActorSystem, Props}
+import com.typesafe.config.ConfigFactory
+import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
+import io.trosa.goupil.actors.Listeners
+
 /*
  * Copyright (c) 2017 Clement Trosa <me@trosa.io>
  *
@@ -23,5 +28,12 @@ package io.trosa.goupil
  */
 
 object Kernel extends App {
-    println("Hello World")
+
+    val config = ConfigFactory.load
+    val session = SlackSessionFactory createWebSocketSlackSession(config getString "slack.token")
+    val system = ActorSystem("goupil-system")
+    val listeners = system.actorOf(Props[Listeners], "listeners-actor")
+
+    session.connect()
+    listeners ! session
 }

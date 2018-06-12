@@ -15,7 +15,8 @@ lazy val root = (project in file(".")).
 			scalaTest % Test,
 			cats,
 			akka,
-			slack
+			slack,
+			sl4j
 		)
 	)
 

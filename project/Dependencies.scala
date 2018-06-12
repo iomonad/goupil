@@ -19,4 +19,5 @@ object Dependencies {
   	lazy val cats = "org.typelevel" %% "cats-core" % catsVersion
 	lazy val akka = "com.typesafe.akka" %% "akka-actor" % akkaVersion
 	lazy val slack = "com.github.Ullink" % "simple-slack-api" % slackVersion
+	lazy val sl4j = "org.slf4j" % "slf4j-simple" % "1.6.2" % Test
 }

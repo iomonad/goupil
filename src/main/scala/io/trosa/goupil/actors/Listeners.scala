@@ -1,7 +1,5 @@
 package io.trosa.goupil.actors
 
-import akka.actor.Actor
-
 /*
  * Copyright (c) 2017 Clement Trosa <me@trosa.io>
  *
@@ -24,6 +22,31 @@ import akka.actor.Actor
  * SOFTWARE.
  */
 
-class Irc extends Actor {
-	override def receive: Receive = ???
+import akka.actor.{Actor, ActorLogging}
+import com.ullink.slack.simpleslackapi.SlackSession
+import com.ullink.slack.simpleslackapi.events._
+import com.ullink.slack.simpleslackapi.listeners._
+
+class Listeners extends Actor with ActorLogging {
+
+    override def receive = {
+        case x: SlackSession => applyListeners(x)
+    }
+
+    private def applyListeners(slackSession: SlackSession): Unit = {
+
+        /*
+        * Message listener
+        * */
+        slackSession addMessagePostedListener(
+            (event: SlackMessagePosted, session: SlackSession) => {
+                log.info("Got a message from: {} - {}", event.getSender.getUserName,
+                    event.getMessageContent)
+        })
+
+        slackSession addChannelJoinedListener(
+            (event: SlackChannelJoined, session: SlackSession) => {
+                log.info("Joined {}", event.getSlackChannel.getName)
+        })
+    }
 }
