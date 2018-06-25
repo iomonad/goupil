@@ -1,4 +1,4 @@
-package io.trosa.goupil.actors
+package io.trosa.goupil.listeners
 
 /*
  * Copyright (c) 2017 Clement Trosa <me@trosa.io>
@@ -22,11 +22,18 @@ package io.trosa.goupil.actors
  * SOFTWARE.
  */
 
-import akka.actor.Actor
-import com.ullink.slack.simpleslackapi.SlackSession
+import akka.actor.{Actor, ActorLogging}
+import io.trosa.goupil.models.MessagePostedCtx
 
-class Reaction extends Actor {
+class MessagePostedActor extends Actor with ActorLogging {
+
     override def receive: Receive = {
-        case x: SlackSession = ???
+        case x: MessagePostedCtx => applyPosted(x)
+        case _ => log.warning("Invalid actor request");
+    }
+
+    private def applyPosted(ctx: MessagePostedCtx): Unit = {
+        log.info("Got a message from: {} - {}", ctx.message.getSender.getUserName,
+            ctx.message.getMessageContent)
     }
 }

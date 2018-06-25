@@ -23,17 +23,20 @@ package io.trosa.goupil.listeners
  */
 
 import akka.actor.{Actor, ActorLogging}
-import io.trosa.goupil.models.MessagePostedCtx
+import com.ullink.slack.simpleslackapi.SlackSession
+import io.trosa.goupil.models.ReactionPostedCtx
 
-class MessagePosted extends Actor with ActorLogging {
+class ReactionAddedActor extends Actor with ActorLogging {
 
     override def receive: Receive = {
-        case x: MessagePostedCtx => applyPosted(x)
-        case _ => log.warning("Invalid actor request");
+        case x: ReactionPostedCtx => applyReaction(x)
+        case _ => log.warning("Invalid actor request")
     }
 
-    private def applyPosted(ctx: MessagePostedCtx): Unit = {
-        log.info("Got a message from: {} - {}", ctx.message.getSender.getUserName,
-            ctx.message.getMessageContent)
+    private def applyReaction(ctx: ReactionPostedCtx): Unit = {
+        log.info("User: {} add reaction: {} on {}",
+            ctx.message.getUser.getUserName,
+            ctx.message.getEmojiName,
+            ctx.message.getTimestamp)
     }
 }

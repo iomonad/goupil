@@ -22,19 +22,21 @@ package io.trosa.goupil.actors
  * SOFTWARE.
  */
 
-import akka.actor.{Actor, ActorContext, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, Props}
 import com.ullink.slack.simpleslackapi.SlackSession
 import com.ullink.slack.simpleslackapi.events._
 import com.ullink.slack.simpleslackapi.events.userchange.SlackUserChange
-import io.trosa.goupil.listeners.MessagePosted
-import io.trosa.goupil.models.MessagePostedCtx
+import io.trosa.goupil.listeners._
+import io.trosa.goupil.models._
 
 class Listeners extends Actor with ActorLogging {
 
     /* Import system context */
     implicit val system: ActorSystem = ActorSystem()
 
-    val messagePosted = system.actorOf(Props[MessagePosted])
+    /* Define internal actors */
+    val messagePosted: ActorRef = system.actorOf(Props[MessagePostedActor])
+    val reactionAdded: ActorRef = system.actorOf(Props[ReactionAddedActor])
 
     override def receive = {
         case x: SlackSession => applyListeners(x)
@@ -48,8 +50,6 @@ class Listeners extends Actor with ActorLogging {
         * */
         slackSession addMessagePostedListener(
             (event: SlackMessagePosted, session: SlackSession) => {
-                log.info("Got a message from: {} - {}", event.getSender.getUserName,
-                    event.getMessageContent)
                 messagePosted ! MessagePostedCtx(event, session)
         })
 
@@ -90,8 +90,7 @@ class Listeners extends Actor with ActorLogging {
         * */
         slackSession addReactionAddedListener(
             (event: ReactionAdded, session: SlackSession) => {
-                log.info("User: {} add reaction: {} on {}",
-                    event.getUser.getUserName, event.getEmojiName, event.getTimestamp)
+                reactionAdded ! ReactionPostedCtx(event, session)
         })
 
         slackSession addReactionRemovedListener(
