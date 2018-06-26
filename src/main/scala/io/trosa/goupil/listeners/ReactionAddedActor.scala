@@ -23,7 +23,6 @@ package io.trosa.goupil.listeners
  */
 
 import akka.actor.{Actor, ActorLogging}
-import com.ullink.slack.simpleslackapi.SlackSession
 import io.trosa.goupil.models.ReactionPostedCtx
 
 class ReactionAddedActor extends Actor with ActorLogging {

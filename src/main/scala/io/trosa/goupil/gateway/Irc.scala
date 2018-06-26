@@ -1,4 +1,4 @@
-package io.trosa.goupil
+package io.trosa.goupil.gateway
 
 /*
  * Copyright (c) 2017 Clement Trosa <me@trosa.io>
@@ -22,34 +22,28 @@ package io.trosa.goupil
  * SOFTWARE.
  */
 
-import com.ullink.slack.simpleslackapi.SlackSession
-import com.ullink.slack.simpleslackapi.events._
-import com.ullink.slack.simpleslackapi.events.userchange.SlackUserChange
+import akka.actor.{Actor, ActorLogging}
+import io.trosa.goupil.models.IrcMessage
 
-package object models {
+class Irc extends Actor with ActorLogging {
 
-    private trait Ctx {
-        def session: SlackSession
+    private val connexion = ???
+
+    override def preStart(): Unit = {
+        log.info("Starting IRC gateway")
     }
 
-    /*
-    * Context model
-    * */
-    case class MessagePostedCtx(message: SlackMessagePosted, session: SlackSession)
-    case class ReactionPostedCtx(message: ReactionAdded, session: SlackSession)
-    case class UserJoinCtx(message: SlackChannelJoined, session: SlackSession)
-    case class MessageUpdatedCtx(message: SlackMessageUpdated, session: SlackSession)
-    case class ChannelLeftCtx(message: SlackChannelLeft, session: SlackSession)
-    case class UserChangeCtx(message: SlackUserChange, session: SlackSession)
-    case class ReactionRemovedCtx(message: ReactionRemoved, session: SlackSession)
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+        log.info("Restarting actor, shutting down established connections")
+    }
 
-    /*
-    * Gateway models
-    * */
+    override def receive: Receive = {
+        case x: IrcMessage => broadcast(x)
+        case _ => log.warning("Invalid irc message request")
+    }
 
-    type Username = String
-    type Message = String
+    /* Broadcast mailbox message to IRC channel */
+    private def broadcast(message: IrcMessage) = {
 
-    private case class IrcInternal(username: Username, message: Message)
-    type IrcMessage = IrcInternal
+    }
 }
