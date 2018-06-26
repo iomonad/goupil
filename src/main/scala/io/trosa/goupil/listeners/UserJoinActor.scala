@@ -1,4 +1,4 @@
-package io.trosa.goupil
+package io.trosa.goupil.listeners
 
 /*
  * Copyright (c) 2017 Clement Trosa <me@trosa.io>
@@ -22,18 +22,17 @@ package io.trosa.goupil
  * SOFTWARE.
  */
 
-import akka.actor.{ActorSystem, Props}
-import com.typesafe.config.ConfigFactory
-import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory
-import io.trosa.goupil.actors.Listeners
+import akka.actor.{Actor, ActorLogging}
+import io.trosa.goupil.models.UserJoinCtx
 
-object Kernel extends App {
+class UserJoinActor extends Actor with ActorLogging {
 
-    val config = ConfigFactory.load
-    val session = SlackSessionFactory createWebSocketSlackSession(config getString "slack.token")
-    val system = ActorSystem("goupil-system")
-    val listeners = system.actorOf(Props[Listeners], "listeners-actor")
+    override def receive: Receive = {
+        case x: UserJoinCtx => applyJoin(x)
+        case _ => log.warning("Invalid actor request")
+    }
 
-    session.connect()
-    listeners ! session
+    private def applyJoin(ctx: UserJoinCtx): Unit = {
+        log.info("Joined {}", ctx.message.getSlackChannel.getName)
+    }
 }

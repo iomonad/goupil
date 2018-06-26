@@ -35,8 +35,13 @@ class Listeners extends Actor with ActorLogging {
     implicit val system: ActorSystem = ActorSystem()
 
     /* Define internal actors */
-    val messagePosted: ActorRef = system.actorOf(Props[MessagePostedActor])
-    val reactionAdded: ActorRef = system.actorOf(Props[ReactionAddedActor])
+    private val messagePosted: ActorRef = system.actorOf(Props[MessagePostedActor])
+    private val reactionAdded: ActorRef = system.actorOf(Props[ReactionAddedActor])
+    private val userJoin: ActorRef = system.actorOf(Props[ReactionAddedActor])
+    private val messageUpdated: ActorRef = system.actorOf(Props[MessageUpdatedActor])
+    private val userLeft: ActorRef = system.actorOf(Props[UserLeftActor])
+    private val userChange: ActorRef = system.actorOf(Props[UserChangeActor])
+    private val reactionDel: ActorRef = system.actorOf(Props[ReactionRemovedActor])
 
     override def receive = {
         case x: SlackSession => applyListeners(x)
@@ -49,55 +54,49 @@ class Listeners extends Actor with ActorLogging {
         * Message listener
         * */
         slackSession addMessagePostedListener(
-            (event: SlackMessagePosted, session: SlackSession) => {
-                messagePosted ! MessagePostedCtx(event, session)
-        })
+            (event: SlackMessagePosted, session: SlackSession) =>
+                messagePosted ! MessagePostedCtx(event, session))
 
         /*
         *  Join listener
         * */
         slackSession addChannelJoinedListener(
-            (event: SlackChannelJoined, session: SlackSession) => {
-                log.info("Joined {}", event.getSlackChannel.getName)
-        })
+            (event: SlackChannelJoined, session: SlackSession) =>
+                userJoin ! UserJoinCtx(event, session))
 
         /*
         * Message update listener
         * */
         slackSession addMessageUpdatedListener(
-            (event: SlackMessageUpdated, session: SlackSession) => {
-                log.info("Message: {} updated to {}", event.getMessageTimestamp, event.getNewMessage)
-        })
+            (event: SlackMessageUpdated, session: SlackSession) =>
+                messageUpdated ! MessageUpdatedCtx(event, session))
 
         /*
         * Left listener
         * */
         slackSession addChannelLeftListener(
-            (event: SlackChannelLeft, session: SlackSession) => {
-            log.debug("{}", event.toString)
-        })
+            (event: SlackChannelLeft, session: SlackSession) =>
+                userLeft ! ChannelLeftCtx(event, session))
 
         /*
         * User metadata changes
         * */
         slackSession addSlackUserChangeListener(
-            (event: SlackUserChange, session: SlackSession) => {
-                log.debug("User Change: {}", event.getUser)
-            })
+            (event: SlackUserChange, session: SlackSession) =>
+                userChange ! UserChangeCtx(event, session))
 
         /*
         * Reaction addition listener
         * */
         slackSession addReactionAddedListener(
-            (event: ReactionAdded, session: SlackSession) => {
-                reactionAdded ! ReactionPostedCtx(event, session)
-        })
+            (event: ReactionAdded, session: SlackSession) =>
+                reactionAdded ! ReactionPostedCtx(event, session))
 
+        /*
+        * Reaction Remove Listener
+        * */
         slackSession addReactionRemovedListener(
-            (event: ReactionRemoved, session: SlackSession) => {
-                log.info("User: {} removed reaction: {} on {}",
-                    event.getUser.getUserName, event.getEmojiName, event.getTimestamp)
-            }
-        )
+            (event: ReactionRemoved, session: SlackSession) =>
+                reactionDel ! ReactionRemovedCtx(event, session))
     }
 }

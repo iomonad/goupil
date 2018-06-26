@@ -33,7 +33,9 @@ class MessagePostedActor extends Actor with ActorLogging {
     }
 
     private def applyPosted(ctx: MessagePostedCtx): Unit = {
-        log.info("Got a message from: {} - {}", ctx.message.getSender.getUserName,
+        log.info("Got a message from: {} on {} - {}",
+            ctx.message.getSender.getUserName,
+            ctx.message.getChannel,
             ctx.message.getMessageContent)
     }
 }
