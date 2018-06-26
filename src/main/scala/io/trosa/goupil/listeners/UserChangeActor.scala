@@ -33,6 +33,6 @@ class UserChangeActor extends Actor with ActorLogging {
     }
 
     private def applyChange(ctx: UserChangeCtx): Unit = {
-        log.debug("User Change: {}", ctx.message.getUser)
+        log.debug("User Change: {} (data cached)", ctx.message.getUser.getRealName)
     }
 }

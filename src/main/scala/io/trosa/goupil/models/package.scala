@@ -50,6 +50,5 @@ package object models {
     type Username = String
     type Message = String
 
-    private case class IrcInternal(username: Username, message: Message)
-    type IrcMessage = IrcInternal
+    case class IrcMessage(username: Username, message: Message)
 }

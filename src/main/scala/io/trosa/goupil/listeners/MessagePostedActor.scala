@@ -22,10 +22,15 @@ package io.trosa.goupil.listeners
  * SOFTWARE.
  */
 
-import akka.actor.{Actor, ActorLogging}
-import io.trosa.goupil.models.MessagePostedCtx
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import io.trosa.goupil.gateway.Irc
+import io.trosa.goupil.models.{IrcMessage, MessagePostedCtx}
 
 class MessagePostedActor extends Actor with ActorLogging {
+
+    implicit val system: ActorSystem = ActorSystem()
+
+    private val IrcBroadcastActor: ActorRef = system.actorOf(Props[Irc])
 
     override def receive: Receive = {
         case x: MessagePostedCtx => applyPosted(x)
@@ -35,7 +40,14 @@ class MessagePostedActor extends Actor with ActorLogging {
     private def applyPosted(ctx: MessagePostedCtx): Unit = {
         log.info("Got a message from: {} on {} - {}",
             ctx.message.getSender.getUserName,
-            ctx.message.getChannel,
+            ctx.message.getChannel.getName,
             ctx.message.getMessageContent)
+
+        ctx.message.getChannel.getName match {
+            case "annonces" => {
+                IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName, ctx.message.getMessageContent)
+            }
+            case _ => ???
+        }
     }
 }

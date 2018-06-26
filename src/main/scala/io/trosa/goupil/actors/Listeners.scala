@@ -43,6 +43,14 @@ class Listeners extends Actor with ActorLogging {
     private val userChange: ActorRef = system.actorOf(Props[UserChangeActor])
     private val reactionDel: ActorRef = system.actorOf(Props[ReactionRemovedActor])
 
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+        log.info("Starting Slack Listener")
+    }
+
+    override def postStop(): Unit = {
+        log.info("Shutting down connection")
+    }
+
     override def receive = {
         case x: SlackSession => applyListeners(x)
         case _ => log.warning("Invalid Slack session received")
