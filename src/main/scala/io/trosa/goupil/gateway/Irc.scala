@@ -24,6 +24,7 @@ package io.trosa.goupil.gateway
 
 import java.net._
 
+import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill}
 import akka.io.Tcp._
 import akka.util.ByteString
@@ -56,37 +57,38 @@ class Irc extends Actor with ActorLogging {
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-        log.info("Restarting actor, shutting down established connections")
+        log.warning("Restarting actor, shutting down established connections")
     }
 
     override def postStop(): Unit = {
-        log.info("Stopping IRC actor. Closing all connections.")
+        log.warning("Stopping IRC actor. Closing all connections.")
         auth = false
         manager ! Close
     }
 
 
-    private def SaslAuth(config: Config): Unit = {
+    private def SaslAuth(config: Config, sender: ActorRef): Unit = {
         lazy val nick = config getString "irc.nick"
         lazy val user = config getString "irc.user"
         lazy val chan = config getString "irc.channel"
 
         assert(nick != null && user != null && chan != null)
-        manager ! Write(ByteString("NICK %s".format(nick)))
-        manager ! Write(ByteString("USER %s 8 x : %s".format(user, user)))
-        manager ! Write(ByteString("JOIN %s".format(chan)))
-        auth = true
+        sender ! Write(ByteString("NICK %s\r\n".format(nick)))
+        sender ! Write(ByteString("USER %s 8 x : %s\r\n".format(user, user)))
+        sender ! Write(ByteString("JOIN %s.\r\n".format(chan)))
     }
 
     override def receive: Receive = {
         case x: IrcMessage => broadcast(x)
         case Connected(remote, local) =>
+
             val connection: ActorRef = sender
 
             connection ! Register(self)
-            if (!auth) SaslAuth(config)
+            if (!auth) SaslAuth(config, sender())
+
             context become {
-                case  Received(data: ByteString) => handler(data)
+                case Received(data: ByteString) => handler(data)
                 case x: IrcMessage => broadcast(x)
             }
         case _ => log.warning("Invalid irc message request")
@@ -94,12 +96,21 @@ class Irc extends Actor with ActorLogging {
 
     private def handler(data: ByteString): Unit = {
         val index: Array[String] = data.utf8String split ' '
-        log.info("IRC @@ " + data.utf8String stripLineEnd)
+        val sender = context.sender()
         val x = index(1)
+
+        log.info("IRC @@ " + data.utf8String stripLineEnd)
         x match {
-            case ":Closing" => context.self ! PoisonPill
+            case ":Closing" => context.self ! Restart
+            case "QUIT" => context.self ! Restart
+            case "443" => context.self ! Restart
+            case "MODE" => auth = true
             case "NOTICE" => log.info("IRC NOTICE from {}: {}", hostname, x)
             case _ => log.info("IRC TOKEN(%s) @@ ".format(x) + data.utf8String stripLineEnd)
+        }
+        if (index(0) eq "PING") {
+            log.info("Responding \"PING\" request from {}.", hostname)
+            sender ! Write(ByteString("PONG : I'm alive !"))
         }
     }
 
