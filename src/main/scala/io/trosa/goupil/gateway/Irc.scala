@@ -88,29 +88,33 @@ class Irc extends Actor with ActorLogging {
             if (!auth) SaslAuth(config, sender())
 
             context become {
-                case Received(data: ByteString) => handler(data)
+                case Received(data: ByteString) =>
+                    lazy val aref = data.utf8String split ' '
+                    if (aref(0) == "PING") {
+                        log.info("@@ IRC @@ Responding PING request")
+                        sender() ! Write(ByteString("PONG :active\r\n"))
+                    } else handler(data)
                 case x: IrcMessage => broadcast(x)
             }
         case _ => log.warning("Invalid irc message request")
     }
 
     private def handler(data: ByteString): Unit = {
-        val index: Array[String] = data.utf8String split ' '
-        val sender = context.sender()
+        lazy val index: Array[String] = data.utf8String split ' '
+        val sock = sender
         val x = index(1)
 
-        log.info("IRC @@ " + data.utf8String stripLineEnd)
-        x match {
-            case ":Closing" => context.self ! Restart
-            case "QUIT" => context.self ! Restart
-            case "443" => context.self ! Restart
-            case "MODE" => auth = true
-            case "NOTICE" => log.info("IRC NOTICE from {}: {}", hostname, x)
-            case _ => log.info("IRC TOKEN(%s) @@ ".format(x) + data.utf8String stripLineEnd)
-        }
+        log.info("@@@ IRC @@@ " + data.utf8String stripLineEnd)
         if (index(0) eq "PING") {
             log.info("Responding \"PING\" request from {}.", hostname)
-            sender ! Write(ByteString("PONG : I'm alive !"))
+            sock ! Write(ByteString("PONG : I'm alive !\\r\n"))
+        }
+        x match {
+            case ":Closing" => context.self ! PoisonPill
+            case "QUIT" => context.self ! PoisonPill
+            case "443" => context.self ! Restart
+            case "MODE" => auth = true
+            case _ => log.info("@@@ IRC TOKEN(%s) @@@ ".format(x) + data.utf8String stripLineEnd)
         }
     }
 
