@@ -47,7 +47,7 @@ class MessagePostedActor extends Actor with ActorLogging {
             case "annonces" => {
                 IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName, ctx.message.getMessageContent)
             }
-            case _ => ???
+            case _ => log.info("Message not in correct list, will not be broadcast")
         }
     }
 }

@@ -24,8 +24,9 @@ package io.trosa.goupil.gateway
 
 import java.net._
 
-import akka.actor.{Actor, ActorLogging, ActorSystem}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill}
 import akka.io.Tcp._
+import akka.util.ByteString
 import com.typesafe.config.{Config, ConfigFactory}
 import io.trosa.goupil.models.IrcMessage
 
@@ -46,6 +47,7 @@ class Irc extends Actor with ActorLogging {
     /* Connection references */
     private val hostname = new InetSocketAddress(server, port)
     private val manager = IO(Tcp)
+    private var auth: Boolean = false
 
     override def preStart(): Unit = {
         log.info("Starting IRC gateway")
@@ -59,32 +61,51 @@ class Irc extends Actor with ActorLogging {
 
     override def postStop(): Unit = {
         log.info("Stopping IRC actor. Closing all connections.")
+        auth = false
         manager ! Close
+    }
+
+
+    private def SaslAuth(config: Config): Unit = {
+        lazy val nick = config getString "irc.nick"
+        lazy val user = config getString "irc.user"
+        lazy val chan = config getString "irc.channel"
+
+        assert(nick != null && user != null && chan != null)
+        manager ! Write(ByteString("NICK %s".format(nick)))
+        manager ! Write(ByteString("USER %s 8 x : %s".format(user, user)))
+        manager ! Write(ByteString("JOIN %s".format(chan)))
+        auth = true
     }
 
     override def receive: Receive = {
         case x: IrcMessage => broadcast(x)
-        case Connected(remote, local) => {
-            val connection = sender
+        case Connected(remote, local) =>
+            val connection: ActorRef = sender
 
             connection ! Register(self)
+            if (!auth) SaslAuth(config)
             context become {
-                case  Received(data) => {
-                    log.info("IRC @@ " + data.utf8String stripLineEnd)
-                    // TODO: Process ident according RFCs
-                }
+                case  Received(data: ByteString) => handler(data)
+                case x: IrcMessage => broadcast(x)
             }
-        }
         case _ => log.warning("Invalid irc message request")
+    }
+
+    private def handler(data: ByteString): Unit = {
+        val index: Array[String] = data.utf8String split ' '
+        log.info("IRC @@ " + data.utf8String stripLineEnd)
+        val x = index(1)
+        x match {
+            case ":Closing" => context.self ! PoisonPill
+            case "NOTICE" => log.info("IRC NOTICE from {}: {}", hostname, x)
+            case _ => log.info("IRC TOKEN(%s) @@ ".format(x) + data.utf8String stripLineEnd)
+        }
     }
 
     /* Broadcast mailbox message to IRC channel */
     private def broadcast(message: IrcMessage): Unit = {
         log.info("Broacasting message to {} - {}: {}", server,
             message.username, message.message)
-    }
-
-    private def auth(config: Config): Unit = {
-        // TODO write to stream
     }
 }
