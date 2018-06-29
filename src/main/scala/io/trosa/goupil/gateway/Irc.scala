@@ -89,8 +89,7 @@ class Irc extends Actor with ActorLogging {
 
             context become {
                 case Received(data: ByteString) =>
-                    lazy val aref = data.utf8String split ' '
-                    if (aref(0) == "PING") {
+                    if (data.startsWith("PING :")) {
                         log.info("@@ IRC @@ Responding PING request")
                         sender() ! Write(ByteString("PONG :active\r\n"))
                     } else handler(data)
@@ -105,10 +104,6 @@ class Irc extends Actor with ActorLogging {
         val x = index(1)
 
         log.info("@@@ IRC @@@ " + data.utf8String stripLineEnd)
-        if (index(0) eq "PING") {
-            log.info("Responding \"PING\" request from {}.", hostname)
-            sock ! Write(ByteString("PONG : I'm alive !\\r\n"))
-        }
         x match {
             case ":Closing" => context.self ! PoisonPill
             case "QUIT" => context.self ! PoisonPill
