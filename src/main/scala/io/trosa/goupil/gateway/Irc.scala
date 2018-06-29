@@ -25,7 +25,7 @@ package io.trosa.goupil.gateway
 import java.net._
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
 import akka.io.Tcp._
 import akka.util.ByteString
 import com.typesafe.config.{Config, ConfigFactory}
@@ -44,6 +44,9 @@ class Irc extends Actor with ActorLogging {
     /* References */
     private val server: String = config getString "irc.server"
     private val port: Int = config getInt "irc.port"
+    private lazy val nick = config getString "irc.nick"
+    private lazy val user = config getString "irc.user"
+    private lazy val chan = config getString "irc.channel"
 
     /* Connection references */
     private val hostname = new InetSocketAddress(server, port)
@@ -67,12 +70,9 @@ class Irc extends Actor with ActorLogging {
     }
 
 
-    private def SaslAuth(config: Config, sender: ActorRef): Unit = {
-        lazy val nick = config getString "irc.nick"
-        lazy val user = config getString "irc.user"
-        lazy val chan = config getString "irc.channel"
-
+    private def SASLAuth(config: Config, sender: ActorRef): Unit = {
         assert(nick != null && user != null && chan != null)
+
         sender ! Write(ByteString("NICK %s\r\n".format(nick)))
         sender ! Write(ByteString("USER %s 8 x : %s\r\n".format(user, user)))
         sender ! Write(ByteString("JOIN %s.\r\n".format(chan)))
@@ -85,12 +85,14 @@ class Irc extends Actor with ActorLogging {
             val connection: ActorRef = sender
 
             connection ! Register(self)
-            if (!auth) SaslAuth(config, sender())
+            if (!auth) SASLAuth(config, sender())
 
             context become {
                 case Received(data: ByteString) =>
                     if (data.startsWith("PING :")) {
-                        log.info("@@ IRC @@ Responding PING request")
+                        log.info("@@ IRC @@ Responding PING request from {} to {}"
+                            , local.getHostName
+                            , remote.getHostName)
                         sender() ! Write(ByteString("PONG :active\r\n"))
                     } else handler(data)
                 case x: IrcMessage => broadcast(x)
@@ -100,7 +102,6 @@ class Irc extends Actor with ActorLogging {
 
     private def handler(data: ByteString): Unit = {
         lazy val index: Array[String] = data.utf8String split ' '
-        val sock = sender
         val x = index(1)
 
         log.info("@@@ IRC @@@ " + data.utf8String stripLineEnd)
@@ -117,5 +118,10 @@ class Irc extends Actor with ActorLogging {
     private def broadcast(message: IrcMessage): Unit = {
         log.info("Broacasting message to {} - {}: {}", server,
             message.username, message.message)
+
+        val connection: ActorRef = sender()
+
+        connection ! Write(ByteString("PRIVMSG %s %s: %s\r\n".format(chan,
+            message.username, message.username)))
     }
 }

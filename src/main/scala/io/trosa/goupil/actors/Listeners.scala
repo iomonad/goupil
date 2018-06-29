@@ -22,7 +22,7 @@ package io.trosa.goupil.actors
  * SOFTWARE.
  */
 
-import akka.actor.{Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.ullink.slack.simpleslackapi.SlackSession
 import com.ullink.slack.simpleslackapi.events._
 import com.ullink.slack.simpleslackapi.events.userchange.SlackUserChange
@@ -51,7 +51,7 @@ class Listeners extends Actor with ActorLogging {
         log.info("Shutting down connection")
     }
 
-    override def receive = {
+    override def receive: PartialFunction[Any, Unit] = {
         case x: SlackSession => applyListeners(x)
         case _ => log.warning("Invalid Slack session received")
     }

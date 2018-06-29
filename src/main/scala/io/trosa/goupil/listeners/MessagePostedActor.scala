@@ -44,9 +44,8 @@ class MessagePostedActor extends Actor with ActorLogging {
             ctx.message.getMessageContent)
 
         ctx.message.getChannel.getName match {
-            case "annonces" => {
+            case "annonces" =>
                 IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName, ctx.message.getMessageContent)
-            }
             case _ => log.info("Message not in correct list, will not be broadcast")
         }
     }

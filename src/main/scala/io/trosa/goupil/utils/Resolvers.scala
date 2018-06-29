@@ -31,6 +31,6 @@ object Resolvers {
     * */
     def resolveChannel(slackChannel: SlackChannel,
                        session: SlackSession): Option[String] = {
-        ???
+        Some("name")
     }
 }
