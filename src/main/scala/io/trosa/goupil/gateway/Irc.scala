@@ -30,6 +30,7 @@ import akka.io.Tcp._
 import akka.util.ByteString
 import com.typesafe.config.{Config, ConfigFactory}
 import io.trosa.goupil.models.IrcMessage
+import javax.net.ssl.{SSLSocket, SSLSocketFactory}
 
 import scala.language.postfixOps
 
@@ -75,11 +76,20 @@ class Irc extends Actor with ActorLogging {
 
         sender ! Write(ByteString("NICK %s\r\n".format(nick)))
         sender ! Write(ByteString("USER %s 8 x : %s\r\n".format(user, user)))
-        sender ! Write(ByteString("JOIN %s.\r\n".format(chan)))
+        sender ! Write(ByteString("JOIN %s\r\n".format(chan)))
+        log.info("Joined {} channel", chan)
     }
 
     override def receive: Receive = {
-        case x: IrcMessage => broadcast(x)
+        case x: IrcMessage => {
+            val connection: ActorRef = sender
+
+            connection ! Register(self)
+            context become {
+                case _ =>
+                    broadcast(x, sender())
+            }
+        }
         case Connected(remote, local) =>
 
             val connection: ActorRef = sender
@@ -94,13 +104,14 @@ class Irc extends Actor with ActorLogging {
                             , local.getHostName
                             , remote.getHostName)
                         sender() ! Write(ByteString("PONG :active\r\n"))
-                    } else handler(data)
-                case x: IrcMessage => broadcast(x)
+                    } else handler(data, sender())
+                case x: IrcMessage => broadcast(x, sender())
+                case _ => log.error("Invalid internal stream request")
             }
         case _ => log.warning("Invalid irc message request")
     }
 
-    private def handler(data: ByteString): Unit = {
+    private def handler(data: ByteString, sendex: ActorRef): Unit = {
         lazy val index: Array[String] = data.utf8String split ' '
         val x = index(1)
 
@@ -110,18 +121,31 @@ class Irc extends Actor with ActorLogging {
             case "QUIT" => context.self ! PoisonPill
             case "443" => context.self ! Restart
             case "MODE" => auth = true
+            case "PRIVMSG" => parsecommand(data, sendex)
             case _ => log.info("@@@ IRC TOKEN(%s) @@@ ".format(x) + data.utf8String stripLineEnd)
         }
     }
 
+    /* Parse irc commands */
+    private def parsecommand(data: ByteString, sendex: ActorRef): Unit = {
+        lazy val str: String = data.utf8String
+        lazy val input: String = str.dropRight(str.lastIndexOf(":"))
+
+        if (input startsWith ":!") {
+            lazy val index: Array[String] = input.split(" ")
+
+            index(0) match {
+                case _ => log.info("Invalid command {}", index(0))
+            }
+        }
+    }
+
     /* Broadcast mailbox message to IRC channel */
-    private def broadcast(message: IrcMessage): Unit = {
+    private def broadcast(message: IrcMessage, sendex: ActorRef): Unit = {
         log.info("Broacasting message to {} - {}: {}", server,
             message.username, message.message)
 
-        val connection: ActorRef = sender()
-
-        connection ! Write(ByteString("PRIVMSG %s %s: %s\r\n".format(chan,
+        sendex ! Write(ByteString("PRIVMSG %s: %s - %s\r\n".format(chan,
             message.username, message.username)))
     }
 }
