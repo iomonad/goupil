@@ -81,15 +81,7 @@ class Irc extends Actor with ActorLogging {
     }
 
     override def receive: Receive = {
-        case x: IrcMessage => {
-            val connection: ActorRef = sender
-
-            connection ! Register(self)
-            context become {
-                case _ =>
-                    broadcast(x, sender())
-            }
-        }
+        case x: IrcMessage => log.info("Got a message to broadcast on the channel - {} ", x)
         case Connected(remote, local) =>
 
             val connection: ActorRef = sender
@@ -105,10 +97,10 @@ class Irc extends Actor with ActorLogging {
                             , remote.getHostName)
                         sender() ! Write(ByteString("PONG :active\r\n"))
                     } else handler(data, sender())
-                case x: IrcMessage => broadcast(x, sender())
+                case x: IrcMessage => broadcast(x)
                 case _ => log.error("Invalid internal stream request")
             }
-        case _ => log.warning("Invalid irc message request")
+        case _ => log.warning("Invalid irc actor message request")
     }
 
     private def handler(data: ByteString, sendex: ActorRef): Unit = {
@@ -122,7 +114,7 @@ class Irc extends Actor with ActorLogging {
             case "443" => context.self ! Restart
             case "MODE" => auth = true
             case "PRIVMSG" => parsecommand(data, sendex)
-            case _ => log.info("@@@ IRC TOKEN(%s) @@@ ".format(x) + data.utf8String stripLineEnd)
+            case _ => log.debug("@@@ IRC TOKEN(%s) @@@ ".format(x) + data.utf8String stripLineEnd)
         }
     }
 
@@ -137,15 +129,17 @@ class Irc extends Actor with ActorLogging {
             index(0) match {
                 case _ => log.info("Invalid command {}", index(0))
             }
+        } else {
+            log.info("--> {}", input)
         }
     }
 
     /* Broadcast mailbox message to IRC channel */
-    private def broadcast(message: IrcMessage, sendex: ActorRef): Unit = {
+    private def broadcast(message: IrcMessage): Unit = {
         log.info("Broacasting message to {} - {}: {}", server,
             message.username, message.message)
 
-        sendex ! Write(ByteString("PRIVMSG %s: %s - %s\r\n".format(chan,
-            message.username, message.username)))
+        //    sendex ! Write(ByteString("PRIVMSG %s: %s - %s\r\n".format(chan,
+        //       message.username, message.username)))
     }
 }
