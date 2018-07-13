@@ -1,5 +1,4 @@
-#target/scala-2.12/goupil-latest.jar
-FROM openjdk:8
+FROM java:openjdk-8-alpine
 
 ENV SCALA_VERSION scala-2.12
 ENV TARGET goupil-latest.jar

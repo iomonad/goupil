@@ -24,15 +24,14 @@ package io.trosa.goupil.gateway
 
 import java.net._
 
-import akka.actor.SupervisorStrategy.Restart
+import scala.language.postfixOps
+
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill}
+import akka.actor.SupervisorStrategy.Restart
 import akka.io.Tcp._
 import akka.util.ByteString
 import com.typesafe.config.{Config, ConfigFactory}
 import io.trosa.goupil.models.IrcMessage
-import javax.net.ssl.{SSLSocket, SSLSocketFactory}
-
-import scala.language.postfixOps
 
 class Irc extends Actor with ActorLogging {
 
@@ -50,9 +49,12 @@ class Irc extends Actor with ActorLogging {
   private lazy val chan      = config getString "irc.channel"
 
   /* Connection references */
-  private val hostname      = new InetSocketAddress(server, port)
-  private val manager       = IO(Tcp)
-  private var auth: Boolean = false
+  private val hostname = new InetSocketAddress(server, port)
+  private val manager  = IO(Tcp)
+
+  /* Our socket writer reference */
+  private var writer: ActorRef = _
+  private var auth: Boolean    = false
 
   override def preStart(): Unit = {
     log.info("Starting IRC gateway")
@@ -75,6 +77,7 @@ class Irc extends Actor with ActorLogging {
     sender ! Write(ByteString("NICK %s\r\n".format(nick)))
     sender ! Write(ByteString("USER %s 8 x : %s\r\n".format(user, user)))
     sender ! Write(ByteString("JOIN %s\r\n".format(chan)))
+    writer = sender
     log.info("Joined {} channel", chan)
   }
 
@@ -135,12 +138,16 @@ class Irc extends Actor with ActorLogging {
   }
 
   /* Broadcast mailbox message to IRC channel */
-  private def broadcast(message: IrcMessage): Unit =
+  private def broadcast(message: IrcMessage): Unit = {
+    import context.system
+
     log.info("Broacasting message to {} - {}: {}",
              server,
              message.username,
              message.message)
 
-  //    sendex ! Write(ByteString("PRIVMSG %s: %s - %s\r\n".format(chan,
-  //       message.username, message.username)))
+    writer ! Write(
+        ByteString("PRIVMSG %s :<%s> %s\r\n"
+          .format(chan, message.username, message.message)))
+  }
 }

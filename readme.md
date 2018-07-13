@@ -59,7 +59,7 @@ bash
 sbt assembly
 docker build -t goupil:latest .
 
-docker run --name goupil goupil:latest
+docker run --name goupil -d -e SLACK_TOKEN=$SLACK_TOKEN goupil:latest
 ```
 
 ## Built With
