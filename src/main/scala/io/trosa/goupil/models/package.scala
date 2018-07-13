@@ -30,75 +30,74 @@ import com.ullink.slack.simpleslackapi.events.userchange.SlackUserChange
 
 package object models {
 
-    private trait Ctx {
-        def session: SlackSession
-    }
+  private trait Ctx {
+    def session: SlackSession
+  }
 
-    /*
-    * Context model
-    * */
-    case class MessagePostedCtx(message: SlackMessagePosted, session: SlackSession)
-    case class ReactionPostedCtx(message: ReactionAdded, session: SlackSession)
-    case class UserJoinCtx(message: SlackChannelJoined, session: SlackSession)
-    case class MessageUpdatedCtx(message: SlackMessageUpdated, session: SlackSession)
-    case class ChannelLeftCtx(message: SlackChannelLeft, session: SlackSession)
-    case class UserChangeCtx(message: SlackUserChange, session: SlackSession)
-    case class ReactionRemovedCtx(message: ReactionRemoved, session: SlackSession)
+  /*
+   * Context model
+   * */
+  case class MessagePostedCtx(message: SlackMessagePosted,
+                              session: SlackSession)
+  case class ReactionPostedCtx(message: ReactionAdded, session: SlackSession)
+  case class UserJoinCtx(message: SlackChannelJoined, session: SlackSession)
+  case class MessageUpdatedCtx(message: SlackMessageUpdated,
+                               session: SlackSession)
+  case class ChannelLeftCtx(message: SlackChannelLeft, session: SlackSession)
+  case class UserChangeCtx(message: SlackUserChange, session: SlackSession)
+  case class ReactionRemovedCtx(message: ReactionRemoved, session: SlackSession)
 
-    /*
-    * Gateway models
-    * */
+  /*
+   * Gateway models
+   * */
 
-    type Username = String
-    type Message = String
+  type Username = String
+  type Message  = String
 
-    case class IrcMessage(username: Username, message: Message)
+  case class IrcMessage(username: Username, message: Message)
 
-    /* Stream message object */
+  /* Stream message object */
 
-    type Hostname = String
-    type Token = String
-    type Target = String
+  type Hostname = String
+  type Token    = String
+  type Target   = String
 
+  trait IStream {
+    def getUsername: Option[Username]
+    def getHostname: Option[InetAddress]
+    def getToken: Option[Token]
+    def getTarget: Option[Target]
+    def getMessage: Option[Message]
+  }
 
-    trait IStream {
-        def getUsername: Option[Username]
-        def getHostname: Option[InetAddress]
-        def getToken: Option[Token]
-        def getTarget: Option[Target]
-        def getMessage: Option[Message]
-    }
+  /* Regular I/O code interface
+   * Not referred as server interaction
+   * */
+  case class IrcStream(username: Username,
+                       hostname: Hostname,
+                       token: Token,
+                       target: Target,
+                       message: Message)
+      extends IStream {
 
-    /* Regular I/O code interface
-    * Not referred as server interaction
-    * */
-    case class IrcStream(username: Username, hostname: Hostname,
-                         token: Token, target: Target, message: Message)
-            extends IStream {
+    override def getUsername: Option[Username] =
+      if (username.isEmpty) None
+      else Some(username)
 
-        override def getUsername: Option[Username] = {
-            if (username.isEmpty) None
-            else Some(username)
-        }
+    override def getHostname: Option[InetAddress] =
+      if (hostname.isEmpty) None
+      else Some(InetAddress.getByName(hostname))
 
-        override def getHostname: Option[InetAddress] = {
-            if (hostname.isEmpty) None
-            else Some(InetAddress.getByName(hostname))
-        }
+    override def getToken: Option[Token] =
+      if (token.isEmpty) None
+      else Some(token)
 
-        override def getToken: Option[Token] = {
-            if (token.isEmpty) None
-            else Some(token)
-        }
+    override def getTarget: Option[Target] =
+      if (target.isEmpty) None
+      else Some(target)
 
-        override def getTarget: Option[Target] = {
-            if (target.isEmpty) None
-            else Some(target)
-        }
-
-        override def getMessage: Option[Message] = {
-            if (target.isEmpty) None
-            else Some(message)
-        }
-    }
+    override def getMessage: Option[Message] =
+      if (target.isEmpty) None
+      else Some(message)
+  }
 }

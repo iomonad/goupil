@@ -28,27 +28,29 @@ import io.trosa.goupil.models.{IrcMessage, MessagePostedCtx}
 
 class MessagePostedActor extends Actor with ActorLogging {
 
-    implicit val system: ActorSystem = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
-    private val IrcBroadcastActor: ActorRef = system.actorOf(Props[Irc])
+  private val IrcBroadcastActor: ActorRef = system.actorOf(Props[Irc])
 
-    override def receive: Receive = {
-        case x: MessagePostedCtx => applyPosted(x)
-        case _ => log.warning("Invalid actor request");
+  override def receive: Receive = {
+    case x: MessagePostedCtx => applyPosted(x)
+    case _                   => log.warning("Invalid actor request");
+  }
+
+  private def applyPosted(ctx: MessagePostedCtx): Unit = {
+    log.info("Got a message from: {} on {} - {}",
+             ctx.message.getSender.getUserName,
+             ctx.message.getChannel.getName,
+             ctx.message.getMessageContent)
+
+    ctx.message.getChannel.getName match {
+      case "annonces" =>
+        IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName,
+                                       ctx.message.getMessageContent)
+      case "general" =>
+        IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName,
+                                       ctx.message.getMessageContent)
+      case _ => log.info("Invalid message context for broadcasting message")
     }
-
-    private def applyPosted(ctx: MessagePostedCtx): Unit = {
-        log.info("Got a message from: {} on {} - {}",
-            ctx.message.getSender.getUserName,
-            ctx.message.getChannel.getName,
-            ctx.message.getMessageContent)
-
-        ctx.message.getChannel.getName match {
-            case "annonces" =>
-                IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName, ctx.message.getMessageContent)
-            case "general" =>
-                IrcBroadcastActor ! IrcMessage(ctx.message.getSender.getUserName, ctx.message.getMessageContent)
-            case _ => log.info("Invalid message context for broadcasting message")
-        }
-    }
+  }
 }

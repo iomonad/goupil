@@ -27,15 +27,14 @@ import io.trosa.goupil.models.ReactionRemovedCtx
 
 class ReactionRemovedActor extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-        case x: ReactionRemovedCtx => applyRemove(x)
-        case _ => log.warning("Invalid actor request")
-    }
+  override def receive: Receive = {
+    case x: ReactionRemovedCtx => applyRemove(x)
+    case _                     => log.warning("Invalid actor request")
+  }
 
-    private def applyRemove(ctx: ReactionRemovedCtx): Unit = {
-        log.info("User: {} removed reaction: {} on {}",
-            ctx.message.getUser.getUserName,
-            ctx.message.getEmojiName,
-            ctx.message.getTimestamp)
-    }
+  private def applyRemove(ctx: ReactionRemovedCtx): Unit =
+    log.info("User: {} removed reaction: {} on {}",
+             ctx.message.getUser.getUserName,
+             ctx.message.getEmojiName,
+             ctx.message.getTimestamp)
 }

@@ -26,11 +26,10 @@ import com.ullink.slack.simpleslackapi.{SlackChannel, SlackSession}
 
 object Resolvers {
 
-    /*
-    * Resolve channel name
-    * */
-    def resolveChannel(slackChannel: SlackChannel,
-                       session: SlackSession): Option[String] = {
-        Some("name")
-    }
+  /*
+   * Resolve channel name
+   * */
+  def resolveChannel(slackChannel: SlackChannel,
+                     session: SlackSession): Option[String] =
+    Some("name")
 }

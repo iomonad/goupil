@@ -27,12 +27,11 @@ import io.trosa.goupil.models.UserChangeCtx
 
 class UserChangeActor extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-        case x: UserChangeCtx => applyChange(x)
-        case _ => log.warning("Invalid actor request")
-    }
+  override def receive: Receive = {
+    case x: UserChangeCtx => applyChange(x)
+    case _                => log.warning("Invalid actor request")
+  }
 
-    private def applyChange(ctx: UserChangeCtx): Unit = {
-        log.debug("User Change: {} (data cached)", ctx.message.getUser.getRealName)
-    }
+  private def applyChange(ctx: UserChangeCtx): Unit =
+    log.debug("User Change: {} (data cached)", ctx.message.getUser.getRealName)
 }

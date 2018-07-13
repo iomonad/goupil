@@ -27,13 +27,13 @@ import io.trosa.goupil.models.MessageUpdatedCtx
 
 class MessageUpdatedActor extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-        case x: MessageUpdatedCtx => applyUpdate(x)
-        case _ => log.warning("Invalid Actor Request")
-    }
+  override def receive: Receive = {
+    case x: MessageUpdatedCtx => applyUpdate(x)
+    case _                    => log.warning("Invalid Actor Request")
+  }
 
-    private def applyUpdate(ctx: MessageUpdatedCtx): Unit = {
-        log.info("Message: {} updated to {}", ctx.message.getMessageTimestamp,
-            ctx.message.getNewMessage)
-    }
+  private def applyUpdate(ctx: MessageUpdatedCtx): Unit =
+    log.info("Message: {} updated to {}",
+             ctx.message.getMessageTimestamp,
+             ctx.message.getNewMessage)
 }

@@ -27,12 +27,11 @@ import io.trosa.goupil.models.UserJoinCtx
 
 class UserJoinActor extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-        case x: UserJoinCtx => applyJoin(x)
-        case _ => log.warning("Invalid actor request")
-    }
+  override def receive: Receive = {
+    case x: UserJoinCtx => applyJoin(x)
+    case _              => log.warning("Invalid actor request")
+  }
 
-    private def applyJoin(ctx: UserJoinCtx): Unit = {
-        log.info("Joined {}", ctx.message.getSlackChannel.getName)
-    }
+  private def applyJoin(ctx: UserJoinCtx): Unit =
+    log.info("Joined {}", ctx.message.getSlackChannel.getName)
 }

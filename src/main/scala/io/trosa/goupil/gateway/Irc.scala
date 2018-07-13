@@ -36,110 +36,111 @@ import scala.language.postfixOps
 
 class Irc extends Actor with ActorLogging {
 
-    import akka.io.{IO, Tcp}
-    import context.system
+  import akka.io.{IO, Tcp}
+  import context.system
 
-    /* Internals */
-    private val config: Config = ConfigFactory.load
+  /* Internals */
+  private val config: Config = ConfigFactory.load
 
-    /* References */
-    private val server: String = config getString "irc.server"
-    private val port: Int = config getInt "irc.port"
-    private lazy val nick = config getString "irc.nick"
-    private lazy val user = config getString "irc.user"
-    private lazy val chan = config getString "irc.channel"
+  /* References */
+  private val server: String = config getString "irc.server"
+  private val port: Int      = config getInt "irc.port"
+  private lazy val nick      = config getString "irc.nick"
+  private lazy val user      = config getString "irc.user"
+  private lazy val chan      = config getString "irc.channel"
 
-    /* Connection references */
-    private val hostname = new InetSocketAddress(server, port)
-    private val manager = IO(Tcp)
-    private var auth: Boolean = false
+  /* Connection references */
+  private val hostname      = new InetSocketAddress(server, port)
+  private val manager       = IO(Tcp)
+  private var auth: Boolean = false
 
-    override def preStart(): Unit = {
-        log.info("Starting IRC gateway")
-        assert(server != null && port > 0)
-        manager ! Connect(hostname)
+  override def preStart(): Unit = {
+    log.info("Starting IRC gateway")
+    assert(server != null && port > 0)
+    manager ! Connect(hostname)
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit =
+    log.warning("Restarting actor, shutting down established connections")
+
+  override def postStop(): Unit = {
+    log.warning("Stopping IRC actor. Closing all connections.")
+    auth = false
+    manager ! Close
+  }
+
+  private def SASLAuth(config: Config, sender: ActorRef): Unit = {
+    assert(nick != null && user != null && chan != null)
+
+    sender ! Write(ByteString("NICK %s\r\n".format(nick)))
+    sender ! Write(ByteString("USER %s 8 x : %s\r\n".format(user, user)))
+    sender ! Write(ByteString("JOIN %s\r\n".format(chan)))
+    log.info("Joined {} channel", chan)
+  }
+
+  override def receive: Receive = {
+    case x: IrcMessage =>
+      log.info("Got a message to broadcast on the channel - {} ", x)
+    case Connected(remote, local) =>
+      val connection: ActorRef = sender
+
+      connection ! Register(self)
+      if (!auth) SASLAuth(config, sender())
+
+      context become {
+        case Received(data: ByteString) =>
+          if (data.startsWith("PING :")) {
+            log.info("@@ IRC @@ Responding PING request from {} to {}",
+                     local.getHostName,
+                     remote.getHostName)
+            sender() ! Write(ByteString("PONG :active\r\n"))
+          } else handler(data, sender())
+        case x: IrcMessage => broadcast(x)
+        case _             => log.error("Invalid internal stream request")
+      }
+    case _ => log.warning("Invalid irc actor message request")
+  }
+
+  private def handler(data: ByteString, sendex: ActorRef): Unit = {
+    lazy val index: Array[String] = data.utf8String split ' '
+    val x                         = index(1)
+
+    log.info("@@@ IRC @@@ " + data.utf8String stripLineEnd)
+    x match {
+      case ":Closing" => context.self ! PoisonPill
+      case "QUIT"     => context.self ! PoisonPill
+      case "443"      => context.self ! Restart
+      case "MODE"     => auth = true
+      case "PRIVMSG"  => parsecommand(data, sendex)
+      case _ =>
+        log.debug(
+            "@@@ IRC TOKEN(%s) @@@ ".format(x) + data.utf8String stripLineEnd)
     }
+  }
 
-    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-        log.warning("Restarting actor, shutting down established connections")
+  /* Parse irc commands */
+  private def parsecommand(data: ByteString, sendex: ActorRef): Unit = {
+    lazy val str: String   = data.utf8String
+    lazy val input: String = str.dropRight(str.lastIndexOf(":"))
+
+    if (input startsWith ":!") {
+      lazy val index: Array[String] = input.split(" ")
+
+      index(0) match {
+        case _ => log.info("Invalid command {}", index(0))
+      }
+    } else {
+      log.info("--> {}", input)
     }
+  }
 
-    override def postStop(): Unit = {
-        log.warning("Stopping IRC actor. Closing all connections.")
-        auth = false
-        manager ! Close
-    }
+  /* Broadcast mailbox message to IRC channel */
+  private def broadcast(message: IrcMessage): Unit =
+    log.info("Broacasting message to {} - {}: {}",
+             server,
+             message.username,
+             message.message)
 
-
-    private def SASLAuth(config: Config, sender: ActorRef): Unit = {
-        assert(nick != null && user != null && chan != null)
-
-        sender ! Write(ByteString("NICK %s\r\n".format(nick)))
-        sender ! Write(ByteString("USER %s 8 x : %s\r\n".format(user, user)))
-        sender ! Write(ByteString("JOIN %s\r\n".format(chan)))
-        log.info("Joined {} channel", chan)
-    }
-
-    override def receive: Receive = {
-        case x: IrcMessage => log.info("Got a message to broadcast on the channel - {} ", x)
-        case Connected(remote, local) =>
-
-            val connection: ActorRef = sender
-
-            connection ! Register(self)
-            if (!auth) SASLAuth(config, sender())
-
-            context become {
-                case Received(data: ByteString) =>
-                    if (data.startsWith("PING :")) {
-                        log.info("@@ IRC @@ Responding PING request from {} to {}"
-                            , local.getHostName
-                            , remote.getHostName)
-                        sender() ! Write(ByteString("PONG :active\r\n"))
-                    } else handler(data, sender())
-                case x: IrcMessage => broadcast(x)
-                case _ => log.error("Invalid internal stream request")
-            }
-        case _ => log.warning("Invalid irc actor message request")
-    }
-
-    private def handler(data: ByteString, sendex: ActorRef): Unit = {
-        lazy val index: Array[String] = data.utf8String split ' '
-        val x = index(1)
-
-        log.info("@@@ IRC @@@ " + data.utf8String stripLineEnd)
-        x match {
-            case ":Closing" => context.self ! PoisonPill
-            case "QUIT" => context.self ! PoisonPill
-            case "443" => context.self ! Restart
-            case "MODE" => auth = true
-            case "PRIVMSG" => parsecommand(data, sendex)
-            case _ => log.debug("@@@ IRC TOKEN(%s) @@@ ".format(x) + data.utf8String stripLineEnd)
-        }
-    }
-
-    /* Parse irc commands */
-    private def parsecommand(data: ByteString, sendex: ActorRef): Unit = {
-        lazy val str: String = data.utf8String
-        lazy val input: String = str.dropRight(str.lastIndexOf(":"))
-
-        if (input startsWith ":!") {
-            lazy val index: Array[String] = input.split(" ")
-
-            index(0) match {
-                case _ => log.info("Invalid command {}", index(0))
-            }
-        } else {
-            log.info("--> {}", input)
-        }
-    }
-
-    /* Broadcast mailbox message to IRC channel */
-    private def broadcast(message: IrcMessage): Unit = {
-        log.info("Broacasting message to {} - {}: {}", server,
-            message.username, message.message)
-
-        //    sendex ! Write(ByteString("PRIVMSG %s: %s - %s\r\n".format(chan,
-        //       message.username, message.username)))
-    }
+  //    sendex ! Write(ByteString("PRIVMSG %s: %s - %s\r\n".format(chan,
+  //       message.username, message.username)))
 }

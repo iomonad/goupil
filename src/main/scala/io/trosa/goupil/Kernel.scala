@@ -29,11 +29,11 @@ import io.trosa.goupil.actors.Listeners
 
 object Kernel extends App {
 
-    val config = ConfigFactory.load
-    val session = SlackSessionFactory createWebSocketSlackSession(config getString "slack.token")
-    val system = ActorSystem("goupil-system")
-    val listeners = system.actorOf(Props[Listeners], "listeners-actor")
+  val config    = ConfigFactory.load
+  val session   = SlackSessionFactory createWebSocketSlackSession (config getString "slack.token")
+  val system    = ActorSystem("goupil-system")
+  val listeners = system.actorOf(Props[Listeners], "listeners-actor")
 
-    session.connect()
-    listeners ! session
+  session.connect()
+  listeners ! session
 }

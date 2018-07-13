@@ -27,13 +27,12 @@ import io.trosa.goupil.models.ChannelLeftCtx
 
 class UserLeftActor extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-        case x: ChannelLeftCtx => applyLeft(x)
-        case _ => log.warning("Invalid actor request")
-    }
+  override def receive: Receive = {
+    case x: ChannelLeftCtx => applyLeft(x)
+    case _                 => log.warning("Invalid actor request")
+  }
 
-    private def applyLeft(ctx: ChannelLeftCtx): Unit = {
-        log.debug("{}", ctx.message.toString)
-        // TODO: Debug all the things
-    }
+  private def applyLeft(ctx: ChannelLeftCtx): Unit =
+    log.debug("{}", ctx.message.toString)
+  // TODO: Debug all the things
 }

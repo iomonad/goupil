@@ -25,55 +25,52 @@ package io.trosa.goupil.utils
 import io.trosa.goupil.models._
 
 /*
-* Custom parsing exception
-* */
+ * Custom parsing exception
+ * */
 
 case class IrcParserException(cause: String) extends Exception {
-    /* Redefine message internal */
-    override def getMessage: String = {
-        "Error while parsing raw message: %s".format(cause)
-    }
+  /* Redefine message internal */
+  override def getMessage: String =
+    "Error while parsing raw message: %s".format(cause)
 }
 
 /*
-* Parsing interface
-* */
+ * Parsing interface
+ * */
 
 abstract class Parser[-A] {
-    def parse(raw: String): Either[Exception, IrcStream]
+  def parse(raw: String): Either[Exception, IrcStream]
 }
 
-
 /* WARNING, impure interface for
-* class building, in the future we will
-* use cat's validator instead.
-* TODO: Replace with cats validators
-* */
+ * class building, in the future we will
+ * use cat's validator instead.
+ * TODO: Replace with cats validators
+ * */
 trait IIrcInternal {
-    var username: Username = new String
-    var hostname: Hostname = new String
-    var token: Token = new String
-    var target: Target = new String
-    var message: Message = new String
+  var username: Username = new String
+  var hostname: Hostname = new String
+  var token: Token       = new String
+  var target: Target     = new String
+  var message: Message   = new String
 }
 
 /*
-* Porcelain object to retrieve easily informations in irc stream
-* @return Either[IrcParserException, IrcStream]
-*    ~> Compilation failure => Exception
-*    ~> IrcStream => correct object
-* */
+ * Porcelain object to retrieve easily informations in irc stream
+ * @return Either[IrcParserException, IrcStream]
+ *    ~> Compilation failure => Exception
+ *    ~> IrcStream => correct object
+ * */
 
-object IrcParser extends Parser[String]
-    with IIrcInternal {
+object IrcParser extends Parser[String] with IIrcInternal {
 
-    override def parse(raw: String): Either[IrcParserException, IrcStream] = {
-        lazy val split = raw split " \r\n"
+  override def parse(raw: String): Either[IrcParserException, IrcStream] = {
+    lazy val split = raw split " \r\n"
 
-        if (split(0).isEmpty) {
-            Left(IrcParserException("Invalid token"))
-        } else {
-            Right(IrcStream(username, hostname, token, target, message))
-        }
+    if (split(0).isEmpty) {
+      Left(IrcParserException("Invalid token"))
+    } else {
+      Right(IrcStream(username, hostname, token, target, message))
     }
+  }
 }

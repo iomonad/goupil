@@ -31,80 +31,86 @@ import io.trosa.goupil.models._
 
 class Listeners extends Actor with ActorLogging {
 
-    /* Import system context */
-    implicit val system: ActorSystem = ActorSystem()
+  /* Import system context */
+  implicit val system: ActorSystem = ActorSystem()
 
-    /* Define internal actors */
-    private val messagePosted: ActorRef = system.actorOf(Props[MessagePostedActor])
-    private val reactionAdded: ActorRef = system.actorOf(Props[ReactionAddedActor])
-    private val userJoin: ActorRef = system.actorOf(Props[ReactionAddedActor])
-    private val messageUpdated: ActorRef = system.actorOf(Props[MessageUpdatedActor])
-    private val userLeft: ActorRef = system.actorOf(Props[UserLeftActor])
-    private val userChange: ActorRef = system.actorOf(Props[UserChangeActor])
-    private val reactionDel: ActorRef = system.actorOf(Props[ReactionRemovedActor])
+  /* Define internal actors */
+  private val messagePosted: ActorRef =
+    system.actorOf(Props[MessagePostedActor])
+  private val reactionAdded: ActorRef =
+    system.actorOf(Props[ReactionAddedActor])
+  private val userJoin: ActorRef = system.actorOf(Props[ReactionAddedActor])
+  private val messageUpdated: ActorRef =
+    system.actorOf(Props[MessageUpdatedActor])
+  private val userLeft: ActorRef   = system.actorOf(Props[UserLeftActor])
+  private val userChange: ActorRef = system.actorOf(Props[UserChangeActor])
+  private val reactionDel: ActorRef =
+    system.actorOf(Props[ReactionRemovedActor])
 
-    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-        log.info("Starting Slack Listener")
-    }
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit =
+    log.info("Starting Slack Listener")
 
-    override def postStop(): Unit = {
-        log.info("Shutting down connection")
-    }
+  override def postStop(): Unit =
+    log.info("Shutting down connection")
 
-    override def receive: PartialFunction[Any, Unit] = {
-        case x: SlackSession => applyListeners(x)
-        case _ => log.warning("Invalid Slack session received")
-    }
+  override def receive: PartialFunction[Any, Unit] = {
+    case x: SlackSession => applyListeners(x)
+    case _               => log.warning("Invalid Slack session received")
+  }
 
-    private def applyListeners(slackSession: SlackSession): Unit = {
+  private def applyListeners(slackSession: SlackSession): Unit = {
 
-        /*
-        * Message listener
-        * */
-        slackSession addMessagePostedListener(
-            (event: SlackMessagePosted, session: SlackSession) =>
-                messagePosted ! MessagePostedCtx(event, session))
+    /*
+     * Message listener
+     * */
+    slackSession addMessagePostedListener (
+        (event: SlackMessagePosted,
+         session: SlackSession) =>
+          messagePosted ! MessagePostedCtx(event, session))
 
-        /*
-        *  Join listener
-        * */
-        slackSession addChannelJoinedListener(
-            (event: SlackChannelJoined, session: SlackSession) =>
-                userJoin ! UserJoinCtx(event, session))
+    /*
+     *  Join listener
+     * */
+    slackSession addChannelJoinedListener (
+        (event: SlackChannelJoined,
+         session: SlackSession) => userJoin ! UserJoinCtx(event, session))
 
-        /*
-        * Message update listener
-        * */
-        slackSession addMessageUpdatedListener(
-            (event: SlackMessageUpdated, session: SlackSession) =>
-                messageUpdated ! MessageUpdatedCtx(event, session))
+    /*
+     * Message update listener
+     * */
+    slackSession addMessageUpdatedListener (
+        (event: SlackMessageUpdated,
+         session: SlackSession) =>
+          messageUpdated ! MessageUpdatedCtx(event, session))
 
-        /*
-        * Left listener
-        * */
-        slackSession addChannelLeftListener(
-            (event: SlackChannelLeft, session: SlackSession) =>
-                userLeft ! ChannelLeftCtx(event, session))
+    /*
+     * Left listener
+     * */
+    slackSession addChannelLeftListener (
+        (event: SlackChannelLeft,
+         session: SlackSession) => userLeft ! ChannelLeftCtx(event, session))
 
-        /*
-        * User metadata changes
-        * */
-        slackSession addSlackUserChangeListener(
-            (event: SlackUserChange, session: SlackSession) =>
-                userChange ! UserChangeCtx(event, session))
+    /*
+     * User metadata changes
+     * */
+    slackSession addSlackUserChangeListener (
+        (event: SlackUserChange,
+         session: SlackSession) => userChange ! UserChangeCtx(event, session))
 
-        /*
-        * Reaction addition listener
-        * */
-        slackSession addReactionAddedListener(
-            (event: ReactionAdded, session: SlackSession) =>
-                reactionAdded ! ReactionPostedCtx(event, session))
+    /*
+     * Reaction addition listener
+     * */
+    slackSession addReactionAddedListener (
+        (event: ReactionAdded,
+         session: SlackSession) =>
+          reactionAdded ! ReactionPostedCtx(event, session))
 
-        /*
-        * Reaction Remove Listener
-        * */
-        slackSession addReactionRemovedListener(
-            (event: ReactionRemoved, session: SlackSession) =>
-                reactionDel ! ReactionRemovedCtx(event, session))
-    }
+    /*
+     * Reaction Remove Listener
+     * */
+    slackSession addReactionRemovedListener (
+        (event: ReactionRemoved,
+         session: SlackSession) =>
+          reactionDel ! ReactionRemovedCtx(event, session))
+  }
 }

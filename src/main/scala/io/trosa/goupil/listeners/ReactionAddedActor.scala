@@ -27,15 +27,14 @@ import io.trosa.goupil.models.ReactionPostedCtx
 
 class ReactionAddedActor extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-        case x: ReactionPostedCtx => applyReaction(x)
-        case _ => log.warning("Invalid actor request")
-    }
+  override def receive: Receive = {
+    case x: ReactionPostedCtx => applyReaction(x)
+    case _                    => log.warning("Invalid actor request")
+  }
 
-    private def applyReaction(ctx: ReactionPostedCtx): Unit = {
-        log.info("User: {} add reaction: {} on {}",
-            ctx.message.getUser.getUserName,
-            ctx.message.getEmojiName,
-            ctx.message.getTimestamp)
-    }
+  private def applyReaction(ctx: ReactionPostedCtx): Unit =
+    log.info("User: {} add reaction: {} on {}",
+             ctx.message.getUser.getUserName,
+             ctx.message.getEmojiName,
+             ctx.message.getTimestamp)
 }
