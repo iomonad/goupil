@@ -24,7 +24,7 @@ lazy val root = (project in file(".")).settings(
 )
 
 /* Boot endpoint */
-mainClass in Compile := Some("io.trosa.goupil")
+mainClass in Compile := Some("io.trosa.goupil.Kernel")
 
 /* Scala lang related */
 scalacOptions += "-deprecation"
