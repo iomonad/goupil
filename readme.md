@@ -1,6 +1,8 @@
+<img align="right" src="https://sameroom.io/blog/content/images/2015/06/Slack-IRC.png" height="200px" style="padding-left: 20px"/>
+
 # Goupil
 
-> An Akka based gateway between your slack workspaces and IRC channels, with logging and bot features. 
+An Akka based gateway between your slack workspaces and IRC channels, with logging and bot features. 
 
 ## Getting Started
 
